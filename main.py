@@ -15,7 +15,7 @@ class TaskForm(FlaskForm):
     task = StringField('Task', validators=[DataRequired()])
     submit = SubmitField('Add Task')
 
-# Function to generate a random color for the tasks 
+# Function to generate a random color 
 def generate_random_color():
     return "#%06x" % random.randint(0, 0xFFFFFF)
 
