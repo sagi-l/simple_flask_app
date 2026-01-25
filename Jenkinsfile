@@ -2,9 +2,47 @@ pipeline {
   agent {
     kubernetes {
       cloud 'kubernetes'
-      inheritFrom 'buildkit-agent'
       namespace 'jenkins-agents'
       defaultContainer 'jnlp'
+
+      yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: buildctl
+    image: moby/buildkit:v0.19.0
+    command:
+      - sleep
+    args:
+      - infinity
+    volumeMounts:
+      - name: buildkit
+        mountPath: /run/buildkit
+      - name: workspace-volume
+        mountPath: /home/jenkins/agent
+    workingDir: /home/jenkins/agent
+
+  - name: buildkitd
+    image: moby/buildkit:v0.19.0
+    args:
+      - --addr
+      - unix:///run/buildkit/buildkitd.sock
+    securityContext:
+      privileged: true
+    volumeMounts:
+      - name: buildkit
+        mountPath: /run/buildkit
+      - name: workspace-volume
+        mountPath: /home/jenkins/agent
+    workingDir: /home/jenkins/agent
+
+  volumes:
+  - name: buildkit
+    emptyDir: {}
+  - name: workspace-volume
+    emptyDir: {}
+"""
     }
   }
 
@@ -26,8 +64,7 @@ pipeline {
       steps {
         container('buildctl') {
           script {
-            // Sanitize branch name for Docker tag
-            def tag = env.BRANCH_NAME.replaceAll('/', '-')
+            def tag = env.BRANCH_NAME?.replaceAll('/', '-') ?: 'local'
 
             sh """
               buildctl \
