@@ -31,7 +31,7 @@ pipeline {
               --frontend dockerfile.v0 \
               --local context=. \
               --local dockerfile=. \
-              --output type=image,name=simple-flask:dev,push=false
+              --output type=image,name=simple-flask:${env.BRANCH_NAME},push=false
           '''
         }
       }
