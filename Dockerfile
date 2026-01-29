@@ -1,23 +1,18 @@
-# Debian-based minimal image with Python 3.9
 FROM python:3.9-slim
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
-
-# Install any needed packages specified in requirements.txt
+# Install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 8000 available to the world outside this container
+# Copy application files
+COPY main.py .
+
+# Copy templates and static directories
+COPY templates/ templates/
+COPY static/ static/
+
 EXPOSE 8000
 
-# Set environment variables
-ENV FLASK_ENV=development
-ENV FLASK_APP=main.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_RUN_PORT=8000
-
-# Run the application
-CMD ["flask", "run"]
+CMD ["python", "main.py"]
