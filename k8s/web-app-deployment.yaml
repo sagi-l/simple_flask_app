@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: flask-app
-          image: image: sabichon/simple-flask:14
+          image: image: sabichon/simple-flask:15
           imagePullPolicy: Always 
           ports:
             - containerPort: 8000
