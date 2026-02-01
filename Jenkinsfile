@@ -54,11 +54,37 @@ pipeline {
         }
       }
     }
+    
+    stage('Update K8s Manifest') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'github-creds',
+          usernameVariable: 'GIT_USER',
+          passwordVariable: 'GIT_TOKEN'
+        )]) {
+          sh '''
+            git config user.email "jenkins@ci.local"
+            git config user.name "Jenkins CI"
+            
+            # Update the image tag in deployment
+            sed -i "s|image: ${DOCKERHUB_USER}/${IMAGE_NAME}:.*|image: ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}|" k8s/web-app-deployment.yaml
+            
+            # Also fix imagePullPolicy if still set to Never
+            sed -i "s|imagePullPolicy: Never|imagePullPolicy: Always|" k8s/web-app-deployment.yaml
+            
+            git add k8s/web-app-deployment.yaml
+            git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG}"
+            
+            git push https://${GIT_USER}:${GIT_TOKEN}@github.com/sagi-l/simple_flask_app.git HEAD:main
+          '''
+        }
+      }
+    }
   }
   
   post {
     success {
-      echo "Pushed ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
+      echo "Pushed ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG} and updated k8s manifest"
     }
     failure {
       echo 'Build or push failed'
