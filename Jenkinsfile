@@ -2,56 +2,23 @@ pipeline {
   agent {
     kubernetes {
       cloud 'kubernetes'
+      inheritFrom 'buildkit-agent'
       namespace 'jenkins-agents'
       defaultContainer 'jnlp'
-
-      yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: buildctl
-    image: moby/buildkit:v0.19.0
-    command:
-      - sleep
-    args:
-      - infinity
-    volumeMounts:
-      - name: buildkit
-        mountPath: /run/buildkit
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
-    workingDir: /home/jenkins/agent
-
-  - name: buildkitd
-    image: moby/buildkit:v0.19.0
-    args:
-      - --addr
-      - unix:///run/buildkit/buildkitd.sock
-    securityContext:
-      privileged: true
-    volumeMounts:
-      - name: buildkit
-        mountPath: /run/buildkit
-      - name: workspace-volume
-        mountPath: /home/jenkins/agent
-    workingDir: /home/jenkins/agent
-
-  volumes:
-  - name: buildkit
-    emptyDir: {}
-  - name: workspace-volume
-    emptyDir: {}
-"""
     }
   }
-
-  options {
-    timeout(time: 10, unit: 'MINUTES')
+  
+  environment {
+    DOCKERHUB_USER = 'sabichon'
+    IMAGE_NAME = 'simple-flask'
+    IMAGE_TAG = "${BUILD_NUMBER}"
   }
-
+  
+  options {
+    timeout(time: 30, unit: 'MINUTES')
+  }
+  
   stages {
-
     stage('Verify BuildKit') {
       steps {
         container('buildctl') {
@@ -59,34 +26,42 @@ spec:
         }
       }
     }
-
-    stage('Build image (NO PUSH)') {
+    
+    stage('Build and Push') {
       steps {
         container('buildctl') {
-          script {
-            def tag = env.BRANCH_NAME?.replaceAll('/', '-') ?: 'local'
-
-            sh """
-              buildctl \
-                --addr unix:///run/buildkit/buildkitd.sock \
-                build \
+          withCredentials([usernamePassword(
+            credentialsId: 'dockerhub-creds',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+          )]) {
+            sh '''
+              # Build image to docker tarball format
+              buildctl --addr unix:///run/buildkit/buildkitd.sock build \
                 --frontend dockerfile.v0 \
                 --local context=. \
                 --local dockerfile=. \
-                --output type=image,name=simple-flask:${tag},push=false
-            """
+                --output type=docker,dest=/tmp/image.tar
+              
+              # Install crane
+              wget -qO- https://github.com/google/go-containerregistry/releases/download/v0.20.0/go-containerregistry_Linux_x86_64.tar.gz | tar xz -C /tmp crane
+              
+              # Login and push
+              echo "$DOCKER_PASS" | /tmp/crane auth login index.docker.io -u "$DOCKER_USER" --password-stdin
+              /tmp/crane push /tmp/image.tar docker.io/${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
+            '''
           }
         }
       }
     }
   }
-
+  
   post {
     success {
-      echo "Build finished successfully for branch: ${env.BRANCH_NAME}"
+      echo "Pushed ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
     }
     failure {
-      echo "Build failed for branch: ${env.BRANCH_NAME}"
+      echo 'Build or push failed'
     }
   }
 }
