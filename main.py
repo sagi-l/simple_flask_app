@@ -7,10 +7,11 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import redis
 
-#webhook test v3
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev_secret")
+
+# App version from environment (set by K8s deployment)
+APP_VERSION = os.environ.get('APP_VERSION', 'dev')
 
 # Redis configuration from environment
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
@@ -54,7 +55,7 @@ def index():
         return redirect(url_for('index'))
 
     tasks = get_tasks()
-    return render_template('index.html', form=form, tasks=tasks)
+    return render_template('index.html', form=form, tasks=tasks, version=APP_VERSION)
 
 @app.route('/delete-task/<int:task_id>')
 def delete_task(task_id):
@@ -79,6 +80,10 @@ def health():
         return {"status": "ok"}, 200
     except Exception:
         return {"status": "error"}, 500
+
+@app.route('/version')
+def version():
+    return {"version": APP_VERSION}, 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
