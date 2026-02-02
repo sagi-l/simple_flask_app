@@ -7,7 +7,7 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import redis
 
-#pipeline test 3
+#pipeline test 4
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev_secret")
