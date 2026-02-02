@@ -19,6 +19,19 @@ pipeline {
   }
   
   stages {
+    stage('Check Trigger') {
+      steps {
+        script {
+          def lastCommit = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
+          echo "Last commit by: ${lastCommit}"
+          if (lastCommit == 'Jenkins CI') {
+            currentBuild.result = 'ABORTED'
+            error('Skipping build triggered by Jenkins commit')
+          }
+        }
+      }
+    }
+    
     stage('Verify BuildKit') {
       steps {
         container('buildctl') {
@@ -88,3 +101,6 @@ pipeline {
     }
   }
 }
+
+        ↓
+Webhook triggers → Jenkins checks author → "Jenkins CI" → ABORT ✅
