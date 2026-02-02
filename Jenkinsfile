@@ -76,10 +76,8 @@ pipeline {
             git config user.email "jenkins@ci.local"
             git config user.name "Jenkins CI"
             
-            # Update the image tag
             sed -i "s|image: ${DOCKERHUB_USER}/${IMAGE_NAME}:.*|image: ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}|" k8s/web-app-deployment.yaml
             
-            # Update the APP_VERSION
             sed -i "s|value: \\".*\\"  # Jenkins will update this|value: \\"${IMAGE_TAG}\\"  # Jenkins will update this|" k8s/web-app-deployment.yaml
             
             git add k8s/web-app-deployment.yaml
@@ -101,4 +99,3 @@ pipeline {
     }
   }
 }
-
