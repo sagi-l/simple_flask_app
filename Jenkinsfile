@@ -22,9 +22,12 @@ pipeline {
     stage('Check Trigger') {
       steps {
         script {
-          def lastCommit = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
-          echo "Last commit by: ${lastCommit}"
-          if (lastCommit == 'Jenkins CI') {
+          def lastCommitAuthor = sh(script: 'git log -1 --pretty=%an', returnStdout: true).trim()
+          def lastCommitMsg = sh(script: 'git log -1 --pretty=%s', returnStdout: true).trim()
+          echo "Last commit by: ${lastCommitAuthor}"
+          echo "Last commit message: ${lastCommitMsg}"
+          
+          if (lastCommitAuthor == 'Jenkins CI' || lastCommitMsg.contains('[skip ci]')) {
             currentBuild.result = 'ABORTED'
             error('Skipping build triggered by Jenkins commit')
           }
