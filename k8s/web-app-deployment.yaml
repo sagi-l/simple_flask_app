@@ -17,13 +17,13 @@ spec:
     spec:
       containers:
         - name: flask-app
-          image: sabichon/simple-flask:41
+          image: sabichon/simple-flask:42
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
             - name: APP_VERSION
-              value: "41"  # Jenkins will update this
+              value: "42"  # Jenkins will update this
             - name: REDIS_HOST
               value: redis
             - name: REDIS_PORT
