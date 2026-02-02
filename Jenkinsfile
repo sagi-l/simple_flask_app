@@ -102,5 +102,3 @@ pipeline {
   }
 }
 
-        ↓
-Webhook triggers → Jenkins checks author → "Jenkins CI" → ABORT ✅
