@@ -73,7 +73,7 @@ pipeline {
             sed -i "s|imagePullPolicy: Never|imagePullPolicy: Always|" k8s/web-app-deployment.yaml
             
             git add k8s/web-app-deployment.yaml
-            git commit -m "Deploy ${IMAGE_NAME}:${IMAGE_TAG}"
+            git commit -m "[skip ci] Deploy ${IMAGE_NAME}:${IMAGE_TAG}"
             
             git push https://${GIT_USER}:${GIT_TOKEN}@github.com/sagi-l/simple_flask_app.git HEAD:main
           '''
