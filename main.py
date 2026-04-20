@@ -7,34 +7,32 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 import redis
 
-#pipeline test 4
-
+# pipeline test 4
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "dev_secret")
-
 # App version from environment (set by K8s deployment)
 APP_VERSION = os.environ.get('APP_VERSION', 'dev')
-
 # Redis configuration from environment
 REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
 REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
 REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
-
 redis_client = redis.Redis(
     host=REDIS_HOST,
     port=REDIS_PORT,
     password=REDIS_PASSWORD,
     decode_responses=True
 )
-
 TASKS_KEY = 'tasks'
+
 
 class TaskForm(FlaskForm):
     task = StringField('Task', validators=[DataRequired()])
     submit = SubmitField('Add Task')
 
+
 def generate_random_color():
     return "#%06x" % random.randint(0, 0xFFFFFF)
+
 
 def get_tasks():
     tasks_json = redis_client.get(TASKS_KEY)
@@ -42,8 +40,10 @@ def get_tasks():
         return json.loads(tasks_json)
     return []
 
+
 def save_tasks(tasks):
     redis_client.set(TASKS_KEY, json.dumps(tasks))
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -55,9 +55,9 @@ def index():
         tasks.append({'task': task, 'color': task_color})
         save_tasks(tasks)
         return redirect(url_for('index'))
-
     tasks = get_tasks()
     return render_template('index.html', form=form, tasks=tasks, version=APP_VERSION)
+
 
 @app.route('/delete-task/<int:task_id>')
 def delete_task(task_id):
@@ -67,6 +67,7 @@ def delete_task(task_id):
         save_tasks(tasks)
     return redirect(url_for('index'))
 
+
 @app.route('/update-task-order', methods=['POST'])
 def update_task_order():
     data = request.get_json()
@@ -74,6 +75,7 @@ def update_task_order():
     updated_tasks = [tasks[int(i)] for i in data['tasks']]
     save_tasks(updated_tasks)
     return jsonify(success=True)
+
 
 @app.route('/health')
 def health():
@@ -83,9 +85,11 @@ def health():
     except Exception:
         return {"status": "error"}, 500
 
+
 @app.route('/version')
 def version():
     return {"version": APP_VERSION}, 200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
